@@ -7,7 +7,7 @@ resources:
 - repo: self
 
 variables:
-  azureSubscription: 'wprservicecon'
+  azureSubscription: 'wprserviceiac'
 
 stages:
 - stage: __default
