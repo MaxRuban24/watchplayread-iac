@@ -1,9 +1,9 @@
 variable "subscription" {
-  type = string
+  type        = string
 }
 
 variable "resource_group" {
-  type = string
+  type        = string
 }
 
 variable "appname" {
@@ -16,3 +16,13 @@ variable "location" {
   description = "Azure location to deploy resources"
 }
 
+variable "port_env_var" {
+  type        = string
+  description = "Web App environment variable port value"
+}
+
+# variable "db_connection_env_var" {
+#   type        = string
+#   description = "Web App environment variable database connection string"
+#   sensitive = true
+# }

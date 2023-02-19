@@ -3,15 +3,15 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.42.0"
+      version = ">= 3.0.0"
     }
   }
-    # Store state file in separate Azure container
-    backend "azurerm" {
-      resource_group_name  = "iac-secure"
-      storage_account_name = "tfstorage202302"
-      container_name       = "tfstate"
-      key                  = "terraform.tfstate"
+  # Store state file in separate Azure container
+  backend "azurerm" {
+    resource_group_name  = "iac-secure"
+    storage_account_name = "tfstorage202302"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
   }
 
   required_version = ">= 1.3.0"
@@ -26,7 +26,6 @@ provider "azurerm" {
   subscription_id = var.subscription
 }
 
-
 # Create the resource group
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group
@@ -34,7 +33,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_container_registry" "acr" {
-  name                = "${var.appname}acr"
+  name                = "${var.appname}acr1"
   resource_group_name = var.resource_group
   location            = var.location
   sku                 = "Basic"
@@ -44,18 +43,13 @@ resource "azurerm_container_registry" "acr" {
   }
 }
 
-resource "azurerm_role_assignment" "acrrole" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "ArcPush"
-  principal_id         = "$(azurerm_container_registry.acr.identity[0])"
-}
-
+# Create Mongodb via Azure Cosmos DB account
 resource "azurerm_cosmosdb_account" "dbacc" {
   name                      = "${var.appname}-db"
   location                  = var.location
   resource_group_name       = azurerm_resource_group.rg.name
   offer_type                = "Standard"
-  kind                      = "GlobalDocumentDB"
+  kind                      = "MongoDB"
   enable_automatic_failover = false
   enable_free_tier          = true
   geo_location {
@@ -82,34 +76,62 @@ resource "azurerm_service_plan" "asp" {
   location            = var.location
   resource_group_name = var.resource_group
   os_type             = "Linux"
-  sku_name            = "F1"
+  sku_name            = "B1"
 }
 
-# # Create App Insights
+# Create Web App with Docker Compose support
+# Terraform gives warning about this resource but newer resource version does not support Docker Compose :(
+# Reference could be found here: https://github.com/hashicorp/terraform-provider-azurerm/issues/16290  
+resource "azurerm_app_service" "webapp" {
+  name                = "${var.appname}-app"
+  location            = var.location
+  resource_group_name = var.resource_group
+  app_service_plan_id = azurerm_service_plan.asp.id
 
-# resource "azurerm_application_insights" "appinsights" {
-#   name                = "watchplayread-app-insights"
-#   location            = "${azurerm_resource_group.rg.location}"
-#   resource_group_name = "${azurerm_resource_group.rg.name}"
-#   application_type    = "web"
-# }
+  site_config {
+    always_on                            = false
+    linux_fx_version                     = "COMPOSE|${filebase64("docker-compose.yml")}"
+    acr_use_managed_identity_credentials = true
+  }
 
-# # Create the web app, pass in the App Service Plan ID
+  app_settings = {
+    "DOCKER_REGISTRY_SERVER_URL" = azurerm_container_registry.acr.login_server
+    "PORT"                       = var.port_env_var
+    "MONGO_URL"                  = tostring("${azurerm_cosmosdb_account.dbacc.connection_strings[0]}")
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+# Apply Azure Container Registry Pull and Push rights for System Managed Identity configured in webapp block 
+resource "azurerm_role_assignment" "acrrole" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPush"
+  principal_id         = azurerm_app_service.webapp.identity[0].principal_id
+}
+
 # resource "azurerm_linux_web_app" "webapp" {
-#   name                  = "watchplayread-app-run"
-#   location              = azurerm_resource_group.rg.location
-#   resource_group_name   = azurerm_resource_group.rg.name
+#   name                  = "${var.appname}-app"
+#   location              = var.location
+#   resource_group_name   = var.resource_group
 #   service_plan_id       = azurerm_service_plan.asp.id
 #   https_only            = true
 #   site_config { 
 #     always_on = false
-#     minimum_tls_version = "1.2" 
+#     minimum_tls_version = "1.2"
+#     container_registry_managed_identity_client_id = true
+#     linux_fx_version = "COMPOSE|${filebase64("docker-compose-prod.yml")}"
 #     application_stack {
-#       dotnet_version = "6.0"
+#       docker_image = "COMPOSE|${filebase64("docker-compose-prod.yml")}"
+#       docker_image_tag = "latest"
 #     }   
-    
+
 #   }
 #   app_settings = {
-#     "APPINSIGHTS_INSTRUMENTATIONKEY" = "${azurerm_application_insights.appinsights.instrumentation_key}"
+#     "DOCKER_REGISTRY_SERVER_URL" = azurerm_container_registry.acr.login_server
+#     "PORT" = var.port_env_var
+#     "MONGO_URL" = tostring("${azurerm_cosmosdb_account.dbacc.connection_strings[0]}")
 #   }
 # }
