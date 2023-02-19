@@ -1,0 +1,87 @@
+# Deploy Azure infrastructure via Terraform
+
+trigger:
+- none
+
+resources:
+- repo: self
+
+variables:
+  azureSubscription: 'wprservicecon'
+
+stages:
+- stage: __default
+  jobs:
+  - job: iac_artifacts
+    displayName: 'terraform artifact'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: ArchiveFiles@2
+      displayName: 'Archive Terraform files'
+      inputs:
+        rootFolderOrFile: '**/**.tf*'
+        archiveType: 'zip'
+        archiveFile: '$(build.artifactstagingdirectory)/iac.zip'
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Artifact: drop'
+      inputs:
+        targetPath: '$(build.artifactstagingdirectory)/iac.zip'
+        artifactName: 'iac'
+        artifactType: 'pipeline'
+
+  - job: iac_deploy
+    displayName: 'terraform deploy'
+    dependsOn:
+    - iac_artifacts
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 1.3.7
+
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download terraform artifact'
+      inputs:
+        artifactName: 'iac'
+        targetPath: '$(Pipeline.WorkSpace)'
+
+    - task: ExtractFiles@1
+      displayName: 'Extract terraform artifact archive'
+      inputs:
+        archiveFilePatterns: '$(Pipeline.WorkSpace)/iac/*.zip'
+        destinationFolder: '$(Pipeline.WorkSpace)/terraform'
+
+    - task: TerraformCLI@0
+      displayName: 'terraform init'
+      inputs:
+        command: init
+        workingDirectory: '$(Pipeline.WorkSpace)/terraform'
+        backendType: azurerm
+        backendServiceArm: $(azureSubscription)
+        backendAzureRmResourceGroupName: 'iac-secure'
+        backendAzureRmStorageAccountName: 'tfstorage202302'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'terraform.tfstate'
+
+    - task: TerraformCLI@0
+      displayName: 'terraform plan'
+      inputs:
+        command: plan
+        workingDirectory: '$(Pipeline.WorkSpace)/terraform'
+        environmentServiceName: $(azureSubscription)
+        publishPlanResults: 'terraform_plan_view'
+        commandOptions: '-out=$(Pipeline.WorkSpace)/terraform/terraform.tfplan'
+
+    - task: TerraformCLI@0
+      displayName: 'terraform apply'
+      inputs:
+        command: apply
+        workingDirectory: '$(Pipeline.WorkSpace)/terraform'
+        environmentServiceName: '$(azureSubscription)'
+        commandOptions: '-auto-approve'
