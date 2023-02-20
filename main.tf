@@ -73,8 +73,8 @@ resource "azurerm_cosmosdb_mongo_database" "db" {
 # Create the Linux App Service Plan
 resource "azurerm_service_plan" "asp" {
   name                = "${var.appname}-asp"
-  location            = var.location
-  resource_group_name = var.resource_group
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
   os_type             = "Linux"
   sku_name            = "B1"
 }
@@ -84,8 +84,8 @@ resource "azurerm_service_plan" "asp" {
 # Reference could be found here: https://github.com/hashicorp/terraform-provider-azurerm/issues/16290  
 resource "azurerm_app_service" "webapp" {
   name                = "${var.appname}-app"
-  location            = var.location
-  resource_group_name = var.resource_group
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
   app_service_plan_id = azurerm_service_plan.asp.id
 
   site_config {
