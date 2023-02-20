@@ -21,8 +21,8 @@ stages:
     - task: ArchiveFiles@2
       displayName: 'Archive Terraform files'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/*.tf*'
-        includeRootFolder: true
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(build.artifactstagingdirectory)/iac.zip'
 
