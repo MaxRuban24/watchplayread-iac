@@ -1,4 +1,4 @@
-# Destroy Azure infrastructure via Terraform
+# Deploy Azure infrastructure via Terraform
 
 trigger:
 - none
@@ -21,19 +21,20 @@ stages:
     - task: ArchiveFiles@2
       displayName: 'Archive Terraform files'
       inputs:
-        rootFolderOrFile: '**/**.tf*'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(build.artifactstagingdirectory)/iac.zip'
 
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Artifact: drop'
+      displayName: 'Publish Artifact'
       inputs:
         targetPath: '$(build.artifactstagingdirectory)/iac.zip'
         artifactName: 'iac'
         artifactType: 'pipeline'
 
   - job: iac_deploy
-    displayName: 'terraform destroy'
+    displayName: 'terraform deploy'
     dependsOn:
     - iac_artifacts
     pool:
@@ -49,7 +50,7 @@ stages:
       displayName: 'Download terraform artifact'
       inputs:
         artifactName: 'iac'
-        targetPath: '$(Pipeline.WorkSpace)'
+        targetPath: '$(Pipeline.WorkSpace)/iac'
 
     - task: ExtractFiles@1
       displayName: 'Extract terraform artifact archive'
