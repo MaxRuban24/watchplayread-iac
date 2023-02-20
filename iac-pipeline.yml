@@ -22,7 +22,7 @@ stages:
       displayName: 'Archive Terraform files'
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/*.tf*'
-        includeRootFolder: false
+        includeRootFolder: true
         archiveType: 'zip'
         archiveFile: '$(build.artifactstagingdirectory)/iac.zip'
 
