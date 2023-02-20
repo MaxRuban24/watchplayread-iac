@@ -7,7 +7,7 @@ resources:
 - repo: self
 
 variables:
-  azureSubscription: 'wprserviceiac'
+- group: var-group
 
 stages:
 - stage: __default
@@ -64,7 +64,7 @@ stages:
         command: init
         workingDirectory: '$(Pipeline.WorkSpace)/terraform'
         backendType: azurerm
-        backendServiceArm: $(azureSubscription)
+        backendServiceArm: $(ARM_SUBSCRIPTION_ID)
         backendAzureRmResourceGroupName: 'iac-secure'
         backendAzureRmStorageAccountName: 'tfstorage202302'
         backendAzureRmContainerName: 'tfstate'
@@ -75,7 +75,7 @@ stages:
       inputs:
         command: plan
         workingDirectory: '$(Pipeline.WorkSpace)/terraform'
-        environmentServiceName: $(azureSubscription)
+        environmentServiceName: $(ARM_SUBSCRIPTION_ID)
         publishPlanResults: 'terraform_plan_view'
         commandOptions: '-out=$(Pipeline.WorkSpace)/terraform/terraform.tfplan'
 
@@ -84,5 +84,5 @@ stages:
       inputs:
         command: apply
         workingDirectory: '$(Pipeline.WorkSpace)/terraform'
-        environmentServiceName: '$(azureSubscription)'
+        environmentServiceName: '$(ARM_SUBSCRIPTION_ID)'
         commandOptions: '-auto-approve'

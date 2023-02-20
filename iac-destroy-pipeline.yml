@@ -7,7 +7,7 @@ resources:
 - repo: self
 
 variables:
-  azureSubscription: 'wprservicecon'
+- group: var-group
 
 stages:
 - stage: __default
@@ -63,7 +63,7 @@ stages:
         command: init
         workingDirectory: '$(Pipeline.WorkSpace)/terraform'
         backendType: azurerm
-        backendServiceArm: $(azureSubscription)
+        backendServiceArm: $(ARM_SUBSCRIPTION_ID)
         backendAzureRmResourceGroupName: 'iac-secure'
         backendAzureRmStorageAccountName: 'tfstorage202302'
         backendAzureRmContainerName: 'tfstate'
@@ -74,5 +74,5 @@ stages:
       inputs:
         command: apply
         workingDirectory: '$(Pipeline.WorkSpace)/terraform'
-        environmentServiceName: '$(azureSubscription)'
+        environmentServiceName: '$(ARM_SUBSCRIPTION_ID)'
         commandOptions: '-destroy -auto-approve'

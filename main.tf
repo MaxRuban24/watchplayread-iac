@@ -24,7 +24,6 @@ provider "azurerm" {
     }
   }
   subscription_id = var.subscription
-  use_msi = true
 }
 
 # Create the resource group
@@ -108,7 +107,7 @@ resource "azurerm_app_service" "webapp" {
 
 # Apply System Managed Identity configured in webapp block 
 resource "azurerm_role_assignment" "acrrole" {
-  scope                = var.subscription
+  scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPush"
   principal_id         = azurerm_app_service.webapp.identity[0].principal_id
 }
