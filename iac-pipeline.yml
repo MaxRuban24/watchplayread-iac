@@ -27,7 +27,7 @@ stages:
         archiveFile: '$(build.artifactstagingdirectory)/iac.zip'
 
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Artifact: drop'
+      displayName: 'Publish Artifact'
       inputs:
         targetPath: '$(build.artifactstagingdirectory)/iac.zip'
         artifactName: 'iac'
@@ -50,12 +50,12 @@ stages:
       displayName: 'Download terraform artifact'
       inputs:
         artifactName: 'iac'
-        targetPath: '$(Pipeline.WorkSpace)'
+        targetPath: '$(Pipeline.WorkSpace)'/iac
 
     - task: ExtractFiles@1
       displayName: 'Extract terraform artifact archive'
       inputs:
-        archiveFilePatterns: '$(Pipeline.WorkSpace)/*.zip'
+        archiveFilePatterns: '$(Pipeline.WorkSpace)/iac/*.zip'
         destinationFolder: '$(Pipeline.WorkSpace)/terraform'
 
     - task: TerraformCLI@0
