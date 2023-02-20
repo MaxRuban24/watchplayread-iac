@@ -55,7 +55,7 @@ stages:
     - task: ExtractFiles@1
       displayName: 'Extract terraform artifact archive'
       inputs:
-        archiveFilePatterns: '$(Pipeline.WorkSpace)/iac/*.zip'
+        archiveFilePatterns: '$(Pipeline.WorkSpace)/*.zip'
         destinationFolder: '$(Pipeline.WorkSpace)/terraform'
 
     - task: TerraformCLI@0
