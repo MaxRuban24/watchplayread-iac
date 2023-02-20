@@ -50,7 +50,7 @@ stages:
       displayName: 'Download terraform artifact'
       inputs:
         artifactName: 'iac'
-        targetPath: '$(Pipeline.WorkSpace)'/iac
+        targetPath: '$(Pipeline.WorkSpace)/iac'
 
     - task: ExtractFiles@1
       displayName: 'Extract terraform artifact archive'
